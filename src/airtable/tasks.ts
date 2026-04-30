@@ -72,7 +72,8 @@ export async function fetchEligibleTasks(): Promise<Task[]> {
     .select({
       filterByFormula: `AND({Status} = 'Ready', {Dispatch mode} = 'Symphony')`,
       pageSize: 100,
-    })
+      returnFieldsByFieldId: true,
+    } as never)
     .eachPage((pageRecords, next) => {
       for (const r of pageRecords) {
         records.push({ id: r.id, fields: r.fields });
@@ -90,8 +91,23 @@ export async function fetchEligibleTasks(): Promise<Task[]> {
 export async function fetchTask(taskId: string): Promise<Task | null> {
   try {
     const base = getBase(COMMAND_CENTER_BASE);
-    const record = await base(TASKS_TABLE).find(taskId);
-    return normalizeTask({ id: record.id, fields: record.fields });
+    // Use select with recordIds filter to get returnFieldsByFieldId support,
+    // since find() does not support it.
+    const records: { id: string; fields: Record<string, unknown> }[] = [];
+    await base(TASKS_TABLE)
+      .select({
+        filterByFormula: `RECORD_ID() = '${taskId}'`,
+        maxRecords: 1,
+        returnFieldsByFieldId: true,
+      } as never)
+      .eachPage((pageRecords, next) => {
+        for (const r of pageRecords) {
+          records.push({ id: r.id, fields: r.fields });
+        }
+        next();
+      });
+    if (records.length === 0) return null;
+    return normalizeTask(records[0]!);
   } catch (err) {
     logger.error({ err, taskId }, 'Failed to fetch task');
     return null;

@@ -102,7 +102,9 @@ export function resolveExpression(
   if (typeof expr !== 'string') return expr;
 
   if (expr === '$now') {
-    return new Date().toISOString();
+    // Return date-only string (YYYY-MM-DD) for compatibility with Airtable date fields.
+    // dateTime fields also accept this format, so this works for both.
+    return new Date().toISOString().split('T')[0];
   }
 
   if (expr.startsWith('$output.')) {
