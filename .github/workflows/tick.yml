@@ -2,14 +2,12 @@ name: Symphony Tick
 
 on:
   schedule:
-    # Every 15 minutes
     - cron: '*/15 * * * *'
   workflow_dispatch:
-    # Allows manual triggering from the GitHub UI
 
 permissions:
   contents: read
-  id-token: write  # Required for Workload Identity Federation
+  id-token: write
 
 jobs:
   tick:
@@ -27,10 +25,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
       - name: Install dependencies
-       run: npm install
+        run: npm install
 
       - name: Authenticate to Google Cloud
         id: auth
