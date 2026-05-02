@@ -102,6 +102,7 @@ export const DestinationConfigSchema = z.object({
   initial_status_field: z.string().nullable().optional(),
   initial_status_value: z.string().nullable().optional(),
   approval_status_value: z.string().nullable().optional(),
+  rejection_status_value: z.string().nullable().optional(),
   field_map: z.record(z.string()),
 });
 export type DestinationConfig = z.infer<typeof DestinationConfigSchema>;
