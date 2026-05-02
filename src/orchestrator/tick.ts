@@ -5,9 +5,11 @@
  *   2. Configure Airtable, Claude, Drive clients.
  *   3. Fetch eligible tasks (Status=Ready, Dispatch mode=Symphony).
  *   4. Filter to dispatchable subset.
- *   5. Run each eligible task to completion (sequentially in Block 6;
- *      Block 8 will add concurrency via Promise.all + per-track guards).
- *   6. Exit cleanly. The cron handles the next tick.
+ *   5. Run each eligible task to completion (sequentially; a later Block 8
+ *      task will add concurrency via Promise.all + per-track guards).
+ *   6. Run the Approval Watcher to transition Awaiting Review tasks based on
+ *      destination-record status (read-mostly; writes only to Tasks and Run Log).
+ *   7. Exit cleanly. The cron handles the next tick.
  */
 
 import { loadWorkflow } from '../config/workflow-loader.js';
@@ -18,6 +20,7 @@ import { configureDrive } from '../deliverable/drive.js';
 import { fetchEligibleTasks } from '../airtable/tasks.js';
 import { filterEligible } from './eligibility.js';
 import { runTask } from './lifecycle.js';
+import { runApprovalWatcher } from './approval-watcher.js';
 import { logger } from '../logging/structured.js';
 
 export async function tick(): Promise<{ ranTasks: number; rejectedTasks: number }> {
@@ -44,30 +47,51 @@ export async function tick(): Promise<{ ranTasks: number; rejectedTasks: number 
   }
 
   const candidates = await fetchEligibleTasks();
-  if (candidates.length === 0) {
-    logger.info({ tickMs: Date.now() - tickStart }, 'Tick complete (no eligible tasks)');
-    return { ranTasks: 0, rejectedTasks: 0 };
-  }
 
-  const { eligible, rejected } = filterEligible(candidates, config);
+  let ranTasks = 0;
+  let rejectedTasks = 0;
 
-  for (const r of rejected) {
-    logger.warn({ taskId: r.task.id, reason: r.reason, taskName: r.task.taskName }, 'Task rejected at eligibility');
-  }
+  if (candidates.length > 0) {
+    const { eligible, rejected } = filterEligible(candidates, config);
 
-  // Sequential execution in Block 6. Block 8 will parallelize with concurrency guards.
-  for (const task of eligible) {
-    try {
-      await runTask(task, config);
-    } catch (err) {
-      logger.error({ err, taskId: task.id }, 'Unhandled error during task run');
+    for (const r of rejected) {
+      logger.warn({ taskId: r.task.id, reason: r.reason, taskName: r.task.taskName }, 'Task rejected at eligibility');
     }
+
+    // Sequential execution in Block 6. Block 8 will parallelize with concurrency guards.
+    for (const task of eligible) {
+      try {
+        await runTask(task, config);
+      } catch (err) {
+        logger.error({ err, taskId: task.id }, 'Unhandled error during task run');
+      }
+    }
+
+    ranTasks = eligible.length;
+    rejectedTasks = rejected.length;
+  }
+
+  // Approval watcher runs after dispatch. Read-mostly: only writes to Tasks
+  // and Run Log. Failures inside the watcher are logged but do not fail the tick.
+  let watcherStats = { approved: 0, rejected: 0, pending: 0, unknown: 0, errors: 0 };
+  try {
+    watcherStats = await runApprovalWatcher(config);
+  } catch (err) {
+    logger.error({ err }, 'Approval watcher failed (tick continues)');
   }
 
   logger.info(
-    { ranTasks: eligible.length, rejectedTasks: rejected.length, tickMs: Date.now() - tickStart },
+    {
+      ranTasks,
+      rejectedTasks,
+      approvalsProcessed: watcherStats.approved,
+      rejectionsProcessed: watcherStats.rejected,
+      stillPending: watcherStats.pending,
+      misconfiguredDestinations: watcherStats.unknown,
+      tickMs: Date.now() - tickStart,
+    },
     'Tick complete',
   );
 
-  return { ranTasks: eligible.length, rejectedTasks: rejected.length };
+  return { ranTasks, rejectedTasks };
 }
