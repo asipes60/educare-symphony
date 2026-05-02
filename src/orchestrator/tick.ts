@@ -5,9 +5,11 @@
  *   2. Configure Airtable, Claude, Drive clients.
  *   3. Fetch eligible tasks (Status=Ready, Dispatch mode=Symphony).
  *   4. Filter to dispatchable subset.
- *   5. Run each eligible task to completion (sequentially in Block 6;
- *      Block 8 will add concurrency via Promise.all + per-track guards).
- *   6. Exit cleanly. The cron handles the next tick.
+ *   5. Run each eligible task to completion (sequentially; a later Block 8
+ *      task will add concurrency via Promise.all + per-track guards).
+ *   6. Run the Approval Watcher to transition Awaiting Review tasks based on
+ *      destination-record status (read-mostly; writes only to Tasks and Run Log).
+ *   7. Exit cleanly. The cron handles the next tick.
  */
 
 import { loadWorkflow } from '../config/workflow-loader.js';

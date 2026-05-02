@@ -24,9 +24,12 @@ Orchestration service for EduCare LLC. Polls Command Center Tasks every 15 minut
 ## Block 8 Scope (Deferred)
 
 - Retry logic with exponential backoff
-- Approval Watcher (poll destination records, mark Done or re-Ready on rejection)
 - Reconciliation for stalled tasks
 - Concurrent task execution within concurrency limits
+
+## Block 8 Scope (Shipped)
+
+- Approval Watcher — polls destination records each tick, transitions Tasks to `Done` on approval and back to `Ready` on rejection. Read-mostly: writes only to Tasks and Run Log, never to destination records.
 
 ## Setup
 
