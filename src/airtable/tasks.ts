@@ -181,3 +181,61 @@ export async function failTask(taskId: string, error: string): Promise<void> {
   });
   logger.error({ taskId, error }, 'Task failed');
 }
+
+/**
+ * Fetch all tasks currently in Awaiting Review status, regardless of dispatch mode.
+ * The Approval Watcher reads destination-record status and decides whether each
+ * Task should transition to Done (approved) or back to Ready (rejected).
+ */
+export async function fetchAwaitingReviewTasks(): Promise<Task[]> {
+  const base = getBase(COMMAND_CENTER_BASE);
+  const records: { id: string; fields: Record<string, unknown> }[] = [];
+
+  await base(TASKS_TABLE)
+    .select({
+      filterByFormula: `{Status} = 'Awaiting Review'`,
+      pageSize: 100,
+      returnFieldsByFieldId: true,
+    } as never)
+    .eachPage((pageRecords, next) => {
+      for (const r of pageRecords) {
+        records.push({ id: r.id, fields: r.fields });
+      }
+      next();
+    });
+
+  logger.info({ count: records.length }, 'Fetched awaiting-review tasks');
+  return records.map(normalizeTask);
+}
+
+/**
+ * Mark a Task as approved by the human reviewer. Sets Approved by human=true,
+ * Status=Done, and stamps Last run ended. Idempotent: re-running on a Done
+ * task is a no-op write but harmless.
+ */
+export async function markTaskApproved(taskId: string): Promise<void> {
+  await updateTaskFields(taskId, {
+    status: 'Done',
+    approvedByHuman: true,
+    lastRunEnded: new Date().toISOString(),
+  });
+  logger.info({ taskId }, 'Task approved by human');
+}
+
+/**
+ * Mark a Task as rejected. Resets Status=Ready so the next tick re-dispatches,
+ * clears Approved by human, and increments Attempt count. Run Log captures the
+ * rejection event separately via appendRunLog.
+ */
+export async function markTaskRejected(taskId: string, currentAttempt: number): Promise<void> {
+  await updateTaskFields(taskId, {
+    status: 'Ready',
+    approvedByHuman: false,
+    attemptCount: currentAttempt + 1,
+    lastRunStarted: '',
+    lastRunEnded: '',
+    lastError: '',
+    runStatus: 'Released',
+  });
+  logger.info({ taskId, nextAttempt: currentAttempt + 1 }, 'Task rejected, returned to Ready');
+}
