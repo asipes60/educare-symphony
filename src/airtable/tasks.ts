@@ -232,8 +232,8 @@ export async function markTaskRejected(taskId: string, currentAttempt: number): 
     status: 'Ready',
     approvedByHuman: false,
     attemptCount: currentAttempt + 1,
-    lastRunStarted: '',
-    lastRunEnded: '',
+    lastRunStarted: null,
+    lastRunEnded: null,
     lastError: '',
     runStatus: 'Released',
   });
