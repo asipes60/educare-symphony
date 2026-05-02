@@ -98,7 +98,14 @@ async function processOneTask(task: Task, config: WorkflowConfig): Promise<Appro
 
   log.info({ destStatus, decision }, 'Approval decision');
 
-  if (decision === 'pending' || decision === 'unknown') return decision;
+  if (decision === 'unknown') {
+    log.warn(
+      { skill: task.skill, destBaseId: task.destinationBaseId },
+      'Destination config has no approval_status_value — task will never self-resolve',
+    );
+    return decision;
+  }
+  if (decision === 'pending') return decision;
 
   const agentIdentity: AgentIdentity = task.track ? TRACK_TO_IDENTITY[task.track] : 'System';
   const now = new Date().toISOString();
@@ -141,17 +148,19 @@ export async function runApprovalWatcher(config: WorkflowConfig): Promise<{
   approved: number;
   rejected: number;
   pending: number;
+  unknown: number;
   errors: number;
 }> {
   const tasks = await fetchAwaitingReviewTasks();
   if (tasks.length === 0) {
     logger.info('Approval watcher: no awaiting-review tasks');
-    return { approved: 0, rejected: 0, pending: 0, errors: 0 };
+    return { approved: 0, rejected: 0, pending: 0, unknown: 0, errors: 0 };
   }
 
   let approved = 0;
   let rejected = 0;
   let pending = 0;
+  let unknown = 0;
   let errors = 0;
 
   for (const task of tasks) {
@@ -159,6 +168,7 @@ export async function runApprovalWatcher(config: WorkflowConfig): Promise<{
       const decision = await processOneTask(task, config);
       if (decision === 'approved') approved++;
       else if (decision === 'rejected') rejected++;
+      else if (decision === 'unknown') unknown++;
       else pending++;
     } catch (err) {
       errors++;
@@ -166,6 +176,9 @@ export async function runApprovalWatcher(config: WorkflowConfig): Promise<{
     }
   }
 
-  logger.info({ approved, rejected, pending, errors, total: tasks.length }, 'Approval watcher complete');
-  return { approved, rejected, pending, errors };
+  logger.info(
+    { approved, rejected, pending, unknown, errors, total: tasks.length },
+    'Approval watcher complete',
+  );
+  return { approved, rejected, pending, unknown, errors };
 }
