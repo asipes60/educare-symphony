@@ -9,6 +9,7 @@
     "tick": "tsx src/index.ts",
     "tick:dev": "tsx watch src/index.ts",
     "validate": "tsx src/cli/validate.ts",
+    "test": "node --import tsx --test 'src/**/*.test.ts'",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write \"src/**/*.ts\""
   },

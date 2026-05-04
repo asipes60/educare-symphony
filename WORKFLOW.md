@@ -24,6 +24,12 @@ claude:
   model: claude-sonnet-4-5-20250929
   api_key: $ANTHROPIC_API_KEY
   max_tokens: 16000
+  # Per-skill overrides for skills whose deliverables exceed the default budget.
+  # Toolkit builder produces 4-6 components in one response and consistently
+  # truncated at 16000 tokens (see Block 8 parse-failure incident, May 2026).
+  # Full chunking refactor tracked separately; this override is a mitigation.
+  max_tokens_by_skill:
+    educare-toolkit-builder: 32000
 workspace:
   root: ./.symphony/workspaces
   cleanup_on_success: true

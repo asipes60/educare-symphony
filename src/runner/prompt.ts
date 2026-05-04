@@ -62,7 +62,17 @@ function buildOutputContractBlock(): string {
 
 Return your response as a single JSON object. Do NOT wrap it in markdown code fences. Do NOT include preamble or commentary outside the JSON.
 
-The JSON keys depend on the skill. Read the skill instructions above carefully to determine the required output schema. The orchestrator will validate the response against the destination's field map and reject incomplete output.`;
+The JSON keys depend on the skill. Read the skill instructions above carefully to determine the required output schema. The orchestrator will validate the response against the destination's field map and reject incomplete output.
+
+### JSON safety rules
+
+The orchestrator parses your response with strict JSON.parse. To avoid parse failures:
+
+1. Use ASCII straight double quotes (U+0022) for every JSON key and string delimiter. Do NOT use smart/curly double quotes (U+201C, U+201D, U+201E).
+2. Inside string values, every newline must be escaped as \\n. Every tab must be escaped as \\t. No literal control characters (U+0000 through U+001F) may appear unescaped inside a string.
+3. Inside string values, every literal double quote must be escaped as \\".
+4. Do not use smart single quotes (U+2018, U+2019) anywhere. Use ASCII apostrophe (U+0027) for contractions.
+5. Do not include trailing commas. Do not include comments. Standard JSON only.`;
 }
 
 export interface BuiltPrompt {
