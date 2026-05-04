@@ -74,7 +74,10 @@ export async function runTask(task: Task, config: WorkflowConfig): Promise<void>
     await claimTask(task.id, attempt, workspace.rootPath);
 
     const { systemPrompt, userMessage } = buildPrompt(task, config);
-    const claudeResult = await callClaude(systemPrompt, userMessage, config, task.id);
+    const claudeResult = await callClaude(systemPrompt, userMessage, config, task.id, {
+      workspacePath: workspace.rootPath,
+      skill: task.skill,
+    });
     inputTokens = claudeResult.inputTokens;
     outputTokens = claudeResult.outputTokens;
     totalTokens = claudeResult.totalTokens;

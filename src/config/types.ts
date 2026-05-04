@@ -139,6 +139,7 @@ export const WorkflowConfigSchema = z.object({
     model: z.string(),
     api_key: z.string(),
     max_tokens: z.number(),
+    max_tokens_by_skill: z.record(z.number()).optional(),
   }),
   workspace: z.object({
     root: z.string(),
