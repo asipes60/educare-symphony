@@ -29,7 +29,7 @@ claude:
   # truncated at 16000 tokens (see Block 8 parse-failure incident, May 2026).
   # Full chunking refactor tracked separately; this override is a mitigation.
   max_tokens_by_skill:
-    educare-toolkit-builder: 32000
+    educare-toolkit-builder: 64000
 workspace:
   root: ./.symphony/workspaces
   cleanup_on_success: true
