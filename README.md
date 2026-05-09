@@ -69,7 +69,13 @@ Required GCP Secret Manager secrets:
 |---|---|
 | `ANTHROPIC_API_KEY` | Anthropic API key |
 | `AIRTABLE_API_KEY` | Airtable PAT |
-| `GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON` | Drive service account JSON |
+
+Drive auth uses Application Default Credentials (ADC), not a stored secret.
+In GitHub Actions, `google-github-actions/auth@v2` exchanges the WIF token
+for a credentials file and exports `GOOGLE_APPLICATION_CREDENTIALS` pointing
+at it before the tick runs. The Drive folder
+(`drive_root_folder_id` in `WORKFLOW.md`) must be shared as Editor with the
+runtime service account email (`WIF_SERVICE_ACCOUNT`).
 
 ## Skills
 

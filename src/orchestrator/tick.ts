@@ -35,16 +35,11 @@ export async function tick(): Promise<{ ranTasks: number; rejectedTasks: number 
   const anthropicKey = await getSecret('ANTHROPIC_API_KEY');
   configureClaude(anthropicKey);
 
-  try {
-    const driveJson = await getSecret('GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON');
-    if (driveJson && driveJson !== 'placeholder') {
-      configureDrive(driveJson);
-    } else {
-      logger.warn('Drive service account is placeholder. Drive uploads will fail until configured.');
-    }
-  } catch (err) {
-    logger.warn({ err }, 'Drive secret not available. Drive uploads will fail until configured.');
-  }
+  // Drive auth via Application Default Credentials. In GHA, the WIF action
+  // already exported GOOGLE_APPLICATION_CREDENTIALS pointing at a credentials
+  // file before this process started. Locally, ADC resolves via
+  // `gcloud auth application-default login`. No secret fetch needed.
+  configureDrive();
 
   const candidates = await fetchEligibleTasks();
 

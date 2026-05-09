@@ -36,7 +36,6 @@ workspace:
   cleanup_on_failure: false
 deliverables:
   drive_root_folder_id: 16cbCkLV3uWgR6KtIhncQd6CHEt3KRlO1
-  drive_service_account_env: GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON
 identities:
   NBCC:
     name: Adam Sipes

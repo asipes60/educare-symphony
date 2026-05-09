@@ -148,7 +148,6 @@ export const WorkflowConfigSchema = z.object({
   }),
   deliverables: z.object({
     drive_root_folder_id: z.string(),
-    drive_service_account_env: z.string(),
   }),
   identities: z.record(IdentityConfigSchema),
   guardrails: z.object({
