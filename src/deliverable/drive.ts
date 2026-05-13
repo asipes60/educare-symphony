@@ -1,6 +1,15 @@
 /**
  * Drive uploader. Creates a per-task subfolder and uploads all files in
  * <workspace>/outputs/ to it. Returns the folder URL.
+ *
+ * Auth uses Application Default Credentials (ADC) so the same code works for:
+ *   - GitHub Actions: WIF credentials file dropped by google-github-actions/auth
+ *     (path exported via GOOGLE_APPLICATION_CREDENTIALS by that action).
+ *   - Local dev: `gcloud auth application-default login` user creds, or a
+ *     service account key file pointed at by GOOGLE_APPLICATION_CREDENTIALS.
+ *
+ * The Drive folder must be shared with the authenticated principal as Editor;
+ * Drive permissions are folder-shared, not IAM-granted.
  */
 
 import { readdirSync, statSync, createReadStream } from 'node:fs';
@@ -10,17 +19,8 @@ import { taskLogger } from '../logging/structured.js';
 
 let drive: drive_v3.Drive | null = null;
 
-export function configureDrive(serviceAccountJson: string): void {
-  let credentials: { client_email: string; private_key: string };
-  try {
-    credentials = JSON.parse(serviceAccountJson);
-  } catch (err) {
-    throw new Error(`Invalid Drive service account JSON: ${(err as Error).message}`);
-  }
-
-  const auth = new google.auth.JWT({
-    email: credentials.client_email,
-    key: credentials.private_key,
+export function configureDrive(): void {
+  const auth = new google.auth.GoogleAuth({
     scopes: ['https://www.googleapis.com/auth/drive'],
   });
 
