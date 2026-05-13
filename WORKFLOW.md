@@ -35,7 +35,7 @@ workspace:
   cleanup_on_success: true
   cleanup_on_failure: false
 deliverables:
-  drive_root_folder_id: 1YXvy7RQ5SOQ6Iy0X5qa7PyTKLu-_Hq0H
+  drive_root_folder_id: 0AIsyqH0U3IINUk9PVA
 identities:
   NBCC:
     name: Adam Sipes
@@ -160,7 +160,7 @@ destinations:
     initial_status_field: Status
     initial_status_value: Draft
     approval_status_value: Approved
-    drive_subfolder_id: 1YXvy7RQ5SOQ6Iy0X5qa7PyTKLu-_Hq0H
+    drive_subfolder_id: 0AIsyqH0U3IINUk9PVA
     field_map:
       Title: $output.title
       Type: $output.type
